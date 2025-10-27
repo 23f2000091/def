@@ -1,0 +1,38 @@
+name: daily-commit
+
+on:
+  schedule:
+    # Runs once per day at 02:30 UTC (specific hour/minute, not wildcards)
+    - cron: '30 2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Create/Update file and commit (23f2000091@ds.study.iitm.ac.in)
+        run: |
+          # Ensure we are on the default branch
+          BRANCH="${GITHUB_REF##*/}"
+          echo "Running on branch: $BRANCH"
+          # Append a timestamp line to a file so there's always a change
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Daily update: $TIMESTAMP" >> .github/daily_updates.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/daily_updates.txt
+          # Create a commit only if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Daily automated update: $TIMESTAMP"
+            git push
+          fi
